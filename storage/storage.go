@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -17,6 +18,7 @@ type Storage interface {
 	CreateAccount(*types.Account) error
 	DeleteAccount(int) error
 	UpdateAccount(*types.Account) error
+	GetAccounts() ([]*types.Account, error)
 	GetAccountByID(int) (*types.Account, error)
 }
 
@@ -58,12 +60,12 @@ func (s *PostgresStore) Init() error {
 
 func (s *PostgresStore) createAccountTable() error {
 	query := `create table if not exists account (
-		id serial primary key not null auto_increment,
+		id serial primary key not null,
 		first_name varchar(50),
 		last_name varchar(50),
 		gender int,
 		dni bigint,
-		cbu bigint,
+		cuit bigint,
 		balance bigint,
 		created_at timestamp default current_timestamp,
 		updated_at timestamp default current_timestamp
@@ -74,7 +76,19 @@ func (s *PostgresStore) createAccountTable() error {
 	return err
 }
 
-func (s *PostgresStore) CreateAccount(*types.Account) error {
+func (s *PostgresStore) CreateAccount(account *types.Account) error {
+	query := `
+	insert into account 
+	(first_name, last_name, gender, dni, cuit, balance)
+	values ($1, $2, $3, $4, $5, $6)
+	`
+	_, err := s.db.Exec(query, account.FirstName, account.LastName, account.Gender, account.Dni, account.Cuit, account.Balance)
+
+	if err != nil {
+		return err
+	}
+
+
 	return nil
 }
 
@@ -83,9 +97,62 @@ func (s *PostgresStore) UpdateAccount(*types.Account) error {
 }
 
 func (s *PostgresStore) DeleteAccount(id int) error {
+	query := `delete from account where id = $1`
+
+	_, err := s.db.Exec(query, id)
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (s *PostgresStore) GetAccountByID(id int) (*types.Account, error) {
+	query := `select * from account where id = $1`
+
+	var account types.Account
+
+	err := s.db.QueryRow(query, id).Scan(&account)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("No matching found")
+		}
+	}
+
 	return nil, nil
+}
+
+func (s *PostgresStore) GetAccounts() ([]*types.Account, error) {
+
+	rows, err := s.db.Query("select * from account")
+
+	if err != nil {
+		return nil, err
+	}
+
+	accounts := []*types.Account{}
+
+	for rows.Next() {
+		account := &types.Account{}
+		err := rows.Scan(
+			&account.ID,
+			&account.FirstName,
+			&account.LastName,
+			&account.Gender,
+			&account.Dni,
+			&account.Cuit,
+			&account.Balance,
+			&account.CreatedAt,
+			&account.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		accounts = append(accounts, account)
+	}
+
+	return accounts, nil
 }
