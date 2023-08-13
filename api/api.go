@@ -116,8 +116,9 @@ func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 	}
 
 	response := fmt.Sprintf("Account with id %d deleted successfully", id)
+	jsonData := map[string]string{"response": response}
 
-	return WriteJSON(w, http.StatusOK, response)
+	return WriteJSON(w, http.StatusOK, jsonData)
 }
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
