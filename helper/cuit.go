@@ -18,7 +18,7 @@ func Cuit(dni int64, gender int) (int64, error) {
 	case 1:
 		AB = "27"
 	default:
-		return 0, errors.New("invalid gender")
+		return -1, errors.New("invalid gender")
 	}
 
 	AB0, _ := strconv.Atoi(string(AB[0]))
