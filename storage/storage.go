@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Gonzapepe/bank-api/helper"
 	"github.com/Gonzapepe/bank-api/types"
 	"github.com/joho/godotenv"
 
@@ -92,7 +93,24 @@ func (s *PostgresStore) CreateAccount(account *types.Account) error {
 	return nil
 }
 
-func (s *PostgresStore) UpdateAccount(*types.Account) error {
+func (s *PostgresStore) UpdateAccount(account *types.Account) error {
+	query := `
+	update account 
+	set first_name = $1, last_name = $2, gender = $3, dni = $4, cuit = $5, balance = $6, updated_at = $7
+	where id = $8
+	`
+	cuit, err := helper.Cuit(account.Dni, account.Gender)
+
+	if err != nil {
+		return err
+	}
+	
+	_, err = s.db.Exec(query, account.FirstName, account.LastName, account.Gender, account.Dni, cuit, account.Balance, account.UpdatedAt, account.ID)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -110,7 +128,7 @@ func (s *PostgresStore) DeleteAccount(id int) error {
 func (s *PostgresStore) GetAccountByID(id int) (*types.Account, error) {
 	query := `select * from account where id = $1`
 
-	var account types.Account
+	account := &types.Account{}
 
 	err := s.db.QueryRow(query, id).Scan(&account)
 	
@@ -120,7 +138,7 @@ func (s *PostgresStore) GetAccountByID(id int) (*types.Account, error) {
 		}
 	}
 
-	return nil, nil
+	return account, nil
 }
 
 func (s *PostgresStore) GetAccounts() ([]*types.Account, error) {

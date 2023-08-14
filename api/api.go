@@ -49,16 +49,14 @@ func (s *APIServer) Run() {
 
 	router.HandleFunc("/account", makeHTTPHandlerFunc(s.handleCreateAccount)).Methods("POST")
 	router.HandleFunc("/accounts", makeHTTPHandlerFunc(s.handleGetAccounts)).Methods("GET")
-	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleDeleteAccount)).Methods("DELETE")
 	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleGetAccount)).Methods("GET")
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleDeleteAccount)).Methods("DELETE")
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleUpdateAccount)).Methods("PUT")
+	
 
 	log.Println("JSON Api server running on port: ", s.listenAddr)
 
 	http.ListenAndServe(s.listenAddr, router)
-}
-
-func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
-	return nil
 }
 
 func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
@@ -116,6 +114,28 @@ func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 	}
 
 	response := fmt.Sprintf("Account with id %d deleted successfully", id)
+	jsonData := map[string]string{"response": response}
+
+	return WriteJSON(w, http.StatusOK, jsonData)
+}
+
+func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) error {
+
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		return err
+	}
+	
+	account, err := s.store.GetAccountByID(id) 
+	
+
+	err = s.store.UpdateAccount(account)
+	
+	if err != nil {
+		return err
+	}
+
+	response := fmt.Sprintf("Account with id %d updated successfully", id)
 	jsonData := map[string]string{"response": response}
 
 	return WriteJSON(w, http.StatusOK, jsonData)
