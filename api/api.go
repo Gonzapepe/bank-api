@@ -126,10 +126,14 @@ func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 	
-	account, err := s.store.GetAccountByID(id) 
-	
+	updatedAccount := &types.Account{}
 
-	err = s.store.UpdateAccount(account)
+	if err := json.NewDecoder(r.Body).Decode(&updatedAccount); err != nil {
+		return err
+	}
+
+
+	err = s.store.UpdateAccount(id, updatedAccount)
 	
 	if err != nil {
 		return err

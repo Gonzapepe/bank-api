@@ -18,7 +18,7 @@ import (
 type Storage interface {
 	CreateAccount(*types.Account) error
 	DeleteAccount(int) error
-	UpdateAccount(*types.Account) error
+	UpdateAccount(int, *types.Account) error
 	GetAccounts() ([]*types.Account, error)
 	GetAccountByID(int) (*types.Account, error)
 }
@@ -93,7 +93,7 @@ func (s *PostgresStore) CreateAccount(account *types.Account) error {
 	return nil
 }
 
-func (s *PostgresStore) UpdateAccount(account *types.Account) error {
+func (s *PostgresStore) UpdateAccount(id int, account *types.Account) error {
 	query := `
 	update account 
 	set first_name = $1, last_name = $2, gender = $3, dni = $4, cuit = $5, balance = $6, updated_at = $7
@@ -105,7 +105,7 @@ func (s *PostgresStore) UpdateAccount(account *types.Account) error {
 		return err
 	}
 	
-	_, err = s.db.Exec(query, account.FirstName, account.LastName, account.Gender, account.Dni, cuit, account.Balance, account.UpdatedAt, account.ID)
+	_, err = s.db.Exec(query, account.FirstName, account.LastName, account.Gender, account.Dni, cuit, account.Balance, account.UpdatedAt, id)
 
 	if err != nil {
 		return err
