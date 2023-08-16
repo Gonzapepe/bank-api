@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -73,4 +74,36 @@ func verifyJWT(endpointHandler func(w http.ResponseWriter, r *http.Request)) htt
 			}
 		}
 	})
+}
+
+func ExtractClaims(r *http.Request) (string, error) {
+err := godotenv.Load()
+if err != nil {
+	return "", err
+}
+
+secretKey := os.Getenv("SECRET_KEY")
+
+	if r.Header["Token"] != nil {
+		tokenString := r.Header["Token"][0]
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{} ,error) {
+
+			if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
+				return nil, fmt.Errorf("there's an error with the signing method")
+			}
+			return secretKey, nil
+		})
+		if err != nil {
+			return "Error Parsing Token: ", err
+		}
+	
+		claims, ok := token.Claims.(jwt.MapClaims)
+	
+		if ok && token.Valid {
+			dni := claims["dni"].(int)
+			return string(dni), nil
+		}
+	}
+
+	return "unable to extract claims", nil 
 }
