@@ -21,6 +21,7 @@ type Storage interface {
 	UpdateAccount(int, *types.Account) error
 	GetAccounts() ([]*types.Account, error)
 	GetAccountByID(int) (*types.Account, error)
+	GetAccountByDni(int64) (*types.Account, error)
 }
 
 type PostgresStore struct {
@@ -68,6 +69,7 @@ func (s *PostgresStore) createAccountTable() error {
 		dni bigint,
 		cuit bigint,
 		balance bigint,
+		password text,
 		created_at timestamp default current_timestamp,
 		updated_at timestamp default current_timestamp
 	)`
@@ -173,4 +175,20 @@ func (s *PostgresStore) GetAccounts() ([]*types.Account, error) {
 	}
 
 	return accounts, nil
+}
+
+func (s *PostgresStore) GetAccountByDni(dni int64) (*types.Account, error) {
+	query := `select * from account where dni = $1`
+
+	account := &types.Account{}
+
+	err := s.db.QueryRow(query, dni).Scan(&account)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("No matching found")
+		}
+	}
+
+	return account, nil
 }
