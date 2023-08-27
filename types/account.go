@@ -12,6 +12,7 @@ type CreateAccountRequest struct {
 	LastName string `json:"last_name"`
 	Gender int `json:"gender"`
 	Dni int64 `json:"dni"`
+	Password string `json:"password"`
 }
 
 type Account struct {
@@ -20,13 +21,19 @@ type Account struct {
 	LastName  string `json:"last_name"`
 	Gender    int `json:"gender"`
 	Dni       int64 `json:"dni"`
+	Password string `json:"password"`
 	Cuit       int64 `json:"cuit"`
 	Balance   int64 `json:"balance"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func NewAccount(firstName string, lastName string, gender int, dni int64) *Account {
+type Login struct {
+	Dni int64 `json:"dni"`
+	Password string `json:"password"`
+}
+
+func NewAccount(firstName string, lastName string, gender int, dni int64, password string) *Account {
 
 cuit, err := helper.Cuit(dni, gender)
 
@@ -40,5 +47,6 @@ return &Account{
 	Gender: gender,
 	Dni: dni,
 	Cuit: cuit,
+	Password: password,
 }
 }
