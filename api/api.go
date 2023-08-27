@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Gonzapepe/bank-api/helper"
+	"github.com/Gonzapepe/bank-api/middleware"
 	"github.com/Gonzapepe/bank-api/storage"
 	"github.com/Gonzapepe/bank-api/types"
 	"github.com/gorilla/mux"
@@ -48,6 +50,7 @@ func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/account", makeHTTPHandlerFunc(s.handleCreateAccount)).Methods("POST")
+	router.HandleFunc("/account/login", makeHTTPHandlerFunc(s.handleLogin)).Methods("POST")
 	router.HandleFunc("/accounts", makeHTTPHandlerFunc(s.handleGetAccounts)).Methods("GET")
 	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleGetAccount)).Methods("GET")
 	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleDeleteAccount)).Methods("DELETE")
@@ -81,7 +84,14 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	account := types.NewAccount(createAccountReq.FirstName, createAccountReq.LastName, createAccountReq.Gender, createAccountReq.Dni)
+	hashedPassword, err := helper.EncryptPassword(createAccountReq.Password)
+
+	if err != nil {
+		fmt.Println("There's an error in password encryption: ", err)
+		return err
+	}
+
+	account := types.NewAccount(createAccountReq.FirstName, createAccountReq.LastName, createAccountReq.Gender, createAccountReq.Dni, hashedPassword)
 
 	if err := s.store.CreateAccount(account); err != nil {
 		return err
@@ -147,4 +157,34 @@ func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) 
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
 	return nil
+}
+
+func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
+	login := &types.Login{}
+
+	if err := json.NewDecoder(r.Body).Decode(&login); err != nil {
+		return err
+	}
+
+	account, err := s.store.GetAccountByDni(login.Dni)
+
+	if err != nil {
+		return err
+	}
+
+	match := helper.DecryptPassword(login.Password, account.Password)
+
+	if match != true {
+		return err
+	}
+
+	jwt, err := middleware.GenerateJWT(account.Dni)
+
+	if err != nil {
+		return err
+	}
+
+	jsonData := map[string]string{"response": jwt}
+
+	return WriteJSON(w, http.StatusOK, jsonData)
 }
