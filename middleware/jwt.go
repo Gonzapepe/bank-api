@@ -10,7 +10,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func GenerateJWT(dni int) (string, error) {
+func GenerateJWT(dni int64) (string, error) {
 	err := godotenv.Load()
 	if err != nil {
 		return "", err
